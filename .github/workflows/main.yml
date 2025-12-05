@@ -1,12 +1,13 @@
-name: Run test 
+name: Say hello
 on: 
    push
 
 jobs:
-  test:
+  hello-world:
     runs-on: ubuntu latest
 
     steps:
-    - name: say hello
+    - name: checkout code from repo
+      uses: actions/checkout@v3
       run: echo "hello world"
    
