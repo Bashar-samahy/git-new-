@@ -1,0 +1,41 @@
+
+#   # List or seqequance 
+# prog_lang:
+#   - python
+#   - go 
+#   - java
+#   - js 
+
+# prog_lang_: [react,json,mongo,nextjs]
+
+# team_member: 
+#   - name: Ahmed
+#     role: developer
+#     skills:
+#       - json
+#       - react 
+#         # - docker
+#   - name: Mohamed
+#     role: administrator 
+#     skills:
+#       - json
+#       - react 
+#       - docker
+
+# # map or dictionaries 
+
+# server_config: 
+#   host: localhost
+#   port: 8080
+#   max_connection: 100
+
+  
+# app: 
+#   name: my-app
+#   version: 2.0.1
+#   database:
+#     host: d.example
+#     port: 8080
+#     credentials: 
+#       username: bashar
+#       pass: 12345
