@@ -1,23 +1,207 @@
-name: Simple Workflow
+name: Node.js CI Pipeline
 
+# ============================================
+# القسم 1: Triggers (المشغلات)
+# ============================================
 on:
+  # 1. حدث Push
   push:
+    # ⚡ يشتغل على push لهذه الـ branches
+    branches:
+      - main           # الفرع الرئيسي
+      - 'release/**'   # أي فرع يبدأ بـ release/
+      # مثال: release/v1.0, release/v2.0-beta
+    
+    # ⚡ يشتغل فقط إذا كانت التغييرات في هذه المسارات
+    paths:
+      - 'src/**'      # أي ملف داخل مجلد src
+      # ⚡ لماذا src فقط؟
+      # 1. كفاءة: ما تبدأش workflow إذا التغيير في docs مثلاً
+      # 2. تركيز: يهتم فقط بالتغييرات في الكود
+      # 3. توفير: ما تضيعش وقت الـ runner
+  
+  # 2. حدث Pull Request
+  pull_request:
+    # ⚡ يشتغل على PRs لهذه الـ branches
     branches:
       - main
-      - relsease/**
-    paths: 
-      - "src/**"
-  pull_request:
-    branches:
-      - main 
-      - release/**
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - 'release/**'
+    # ⚡ أنواع الأحداث (افتراضي: opened, synchronize, reopened)
+    # synchronize: لما تضيف commits جديدة للـ PR
 
-      - name: run tests
-        run: npm test
- 
+# ============================================
+# القسم 2: Jobs (المهام)
+# ============================================
+jobs:
+  # المهمة 1: الاختبارات
+  test:
+    # ⚡ اسم المهمة يظهر في واجهة GitHub
+    name: Run Tests on Ubuntu
+    
+    # ⚡ نوع Runner (السيرفر اللي هيشغل الكود)
+    runs-on: ubuntu-latest
+    # ⚡ ubuntu-latest = أحدث نسخة أوبنتو
+    # ⚡ مجاني للـ public repos
+    
+    # ============================================
+    # القسم 3: الخطوات (Steps)
+    # ============================================
+    steps:
+      # --------------------------------------------------
+      # الخطوة 1: تنزيل الكود من Repository
+      # --------------------------------------------------
+      - name: Checkout code
+        # ⚡ "name": اسم يظهر في logs
+        uses: actions/checkout@v4.2.2
+        # ⚡ "uses": تستخدم Action جاهز
+        # ⚡ actions/checkout: ينزل الكود من الـ repo
+        # ⚡ @v4.2.2: إصدار محدد للاستقرار
+        
+      # --------------------------------------------------
+      # الخطوة 2: إعداد Node.js
+      # --------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # ⚡ "with": تمرير parameters للـ Action
+          node-version: '20'  # إصدار Node.js
+          # ⚡ يمكن استخدام 'lts/*' لأحدث إصدار LTS
+          cache: 'npm'  # يخزن node_modules للمرة القادمة
+          
+      # --------------------------------------------------
+      # الخطوة 3: تثبيت الاعتماديات
+      # --------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+        # ⚡ "run": تشغل أمر في shell
+        # ⚡ npm ci أفضل من npm install للـ CI:
+        # 1. أسرع
+        # 2. أكثر دقة (بستخدم package-lock.json بالضبط)
+        # 3. أنظف (بيحذف node_modules أولاً إذا لزم)
+        
+      # --------------------------------------------------
+      # الخطوة 4: التحقق من بنية المشروع
+      # --------------------------------------------------
+      - name: Verify project structure
+        run: |
+          echo "📁 Project structure:"
+          ls -la
+          echo -e "\n📁 src directory:"
+          ls -la src/
+          echo -e "\n📄 app.js content (first 10 lines):"
+          head -10 src/app.js
+        # ⚡ | (pipe): يعني الأوامر التالية كلها جزء من run واحد
+        
+      # --------------------------------------------------
+      # الخطوة 5: تشغيل التطبيق
+      # --------------------------------------------------
+      - name: Run the application
+        run: |
+          echo "🚀 Testing direct execution..."
+          OUTPUT=$(node src/app.js)
+          echo "Application output:"
+          echo "$OUTPUT"
+          
+          # التحقق من الناتج المتوقع
+          if echo "$OUTPUT" | grep -q "Hello, World!"; then
+            echo "✅ Application output is correct!"
+          else
+            echo "❌ Expected output not found!"
+            exit 1
+          fi
+          
+      # --------------------------------------------------
+      # الخطوة 6: اختبار module exports
+      # --------------------------------------------------
+      - name: Test module exports
+        run: |
+          echo "🔧 Testing module exports..."
+          
+          # إنشاء ملف اختبار مؤقت
+          cat > test_module.js << 'EOF'
+          const app = require('./src/app.js');
+          
+          console.log("Testing greet function:");
+          const greetResult = app.greet("GitHub");
+          console.log(greetResult);
+          
+          console.log("\nTesting add function:");
+          const addResult = app.add(10, 20);
+          console.log("10 + 20 =", addResult);
+          
+          console.log("\nTesting isEven function:");
+          console.log("Is 8 even?", app.isEven(8));
+          console.log("Is 9 even?", app.isEven(9));
+          
+          console.log("\n✅ All module tests passed!");
+          EOF
+          
+          # تشغيل الاختبار
+          node test_module.js
+          
+          # تنظيف
+          rm -f test_module.js
+          
+      # --------------------------------------------------
+      # الخطوة 7: تشغيل الاختبارات (test.sh)
+      # --------------------------------------------------
+      - name: Run test suite
+        run: |
+          echo "🧪 Running test suite..."
+          
+          # جعل الملف قابل للتنفيذ (إذا لزم)
+          chmod +x src/test.sh
+          
+          # تشغيل الاختبارات
+          ./src/test.sh
+          
+          # التحقق من نتيجة الاختبار
+          TEST_EXIT_CODE=$?
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "✅ All tests passed!"
+          else
+            echo "❌ Tests failed with exit code: $TEST_EXIT_CODE"
+            exit $TEST_EXIT_CODE
+          fi
+          
+      # --------------------------------------------------
+      # الخطوة 8: اختبار npm scripts
+      # --------------------------------------------------
+      - name: Test npm scripts
+        run: |
+          echo "📦 Testing npm scripts..."
+          
+          echo -e "\n1. Testing 'npm start':"
+          npm start 2>&1 | head -10
+          
+          echo -e "\n2. Testing 'npm test':"
+          npm test 2>&1 | tail -5
+          
+      # --------------------------------------------------
+      # الخطوة 9: إظهار معلومات النظام
+      # --------------------------------------------------
+      - name: System information
+        if: success()  # ⚡ تتنفذ فقط لو كل الخطوات السابقة نجحت
+        run: |
+          echo "💻 System Info:"
+          echo "Node.js: $(node --version)"
+          echo "npm: $(npm --version)"
+          echo "OS: $(uname -s) $(uname -r)"
+          echo "CPU: $(nproc) cores"
+          echo "Memory:"
+          free -h
+          
+      # --------------------------------------------------
+      # الخطوة 10: النتيجة النهائية
+      # --------------------------------------------------
+      - name: Completion message
+        if: always()  # ⚡ تتنفذ دائمًا (نجاح أو فشل)
+        run: |
+          echo "========================================"
+          echo "📊 Workflow Result: ${{ job.status }}"
+          echo "🕒 Finished at: $(date)"
+          echo "💾 Runner: ubuntu-latest"
+          echo "🎯 Event: ${{ github.event_name }}"
+          echo "🔗 Branch: ${{ github.ref }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "========================================"
