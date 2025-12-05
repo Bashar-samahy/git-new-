@@ -9,3 +9,11 @@ else
     echo "Test failed! Expected '$EXPECTED' but got '$OUTPUT'"
     exit 1
 fi
+
+echo "Testing add function..."
+ADD_RESULT=$(node -e "console.log(require('./src/app').add(2, 3))")
+if [ "$ADD_RESULT" -eq 5 ]; then
+    echo "✅ Add test passed"
+else
+    echo "❌ Add test failed"
+fi

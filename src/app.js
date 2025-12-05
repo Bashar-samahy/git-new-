@@ -1,11 +1,15 @@
-function greet(name){
-    return `hello, ${name}!`;
+function greet(name) {
+    return `Hello, ${name}!`;
 }
 
-module.export = greet
+function add(a, b) { return a + b; }
+function multiply(a, b) { return a * b; }
 
-if (requestAnimationFrame.main === module) {
+module.exports = { greet, add, multiply };
 
-    console.log(greet("world"));
+// Ensure function is exportable
+// If run directly, print output (useful for debugging)
 
+if (require.main === module) {
+    console.log(greet("World"));
 }

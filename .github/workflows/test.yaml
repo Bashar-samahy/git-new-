@@ -17,3 +17,12 @@ jobs:
         uses: actions/checkout@v4.2.2
       - name: Run tests
         run: npm test
+      - name: Lint code
+        run: npx eslint src/
+  
+      - name: Build project
+        run: npm run build
+  
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        run: echo "Deploying to production..."
