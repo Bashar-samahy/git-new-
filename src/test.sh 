@@ -1,0 +1,10 @@
+#!/bin/bash 
+EXPEXTED="Hello, world"
+OUTPUT=$(node -e "console.log(require('./src/app'))")
+if [ "$OUTPUT" == "$EXPEXTED" ]; then
+echo "test passed"
+exit0
+else
+echo "test failed!"
+extit 1
+fi 
